@@ -29,33 +29,6 @@ def start(message):
         bot.send_message(message.from_user.id, "Type /reg")
 
 
-def get_name(message):
-    global name
-    name = message.text
-    bot.send_message(message.from_user.id, "What is your surname?")
-    bot.register_next_step_handler(message, get_surname)
-
-
-def get_surname(message):
-    global surname
-    surname = message.text
-    bot.send_message(message.from_user.id, "How old are you?")
-    bot.register_next_step_handler(message, get_age)
-
-
-def get_age(message):
-    global age
-    while age == 0:
-        try:
-            age = int(message.text)
-        except Exception:
-            bot.send_message(message.from_user.id, "Type with numbers, please")
-    bot.send_message(
-        message.from_user.id,
-        "You are " + str(age) + " years, your name is" + name + " " + surname + "?",
-    )
-
-
 def get_age(message):
     global age
     while age == 0:
