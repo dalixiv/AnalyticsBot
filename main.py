@@ -46,19 +46,6 @@ def get_age(message):
             age = int(message.text)
         except Exception:
             bot.send_message(message.from_user.id, "Type with numbers, please")
-    bot.send_message(
-        message.from_user.id,
-        "You are " + str(age) + " years, your name is" + name + " " + surname + "?",
-    )
-
-
-def get_age(message):
-    global age
-    while age == 0:
-        try:
-            age = int(message.text)
-        except Exception:
-            bot.send_message(message.from_user.id, "Type with numbers, please")
     keyboard = types.InlineKeyboardMarkup()
     key_yes = types.InlineKeyboardButton(text="Yes!", callback_data="yes")
     keyboard.add(key_yes)
