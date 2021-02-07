@@ -28,7 +28,7 @@ def start_command(message):
         )
 
 
-@bot.message_handler(commands=["reg"])
+@bot.message_handler(commands=["reg"])  # команда реги
 def start(message):
     if message.text == "/reg":
         bot.send_message(message.from_user.id, "What is your name?")
@@ -37,7 +37,7 @@ def start(message):
         bot.send_message(message.from_user.id, "Type /reg")
 
 
-@bot.message_handler(commands=["exchange"])
+@bot.message_handler(commands=["exchange"])  # команда показывает курс
 def exchange_command(message):
     keyboard = telebot.types.InlineKeyboardMarkup()
     keyboard.row(telebot.types.InlineKeyboardButton("USD", callback_data="get-USD"))
@@ -51,7 +51,7 @@ def exchange_command(message):
     )
 
 
-@bot.message_handler(commands=["ticker"])
+@bot.message_handler(commands=["ticker"])  # команда показывает акции
 def start(message):
     if message.text == "/ticker":
         keyboard = types.InlineKeyboardMarkup()
@@ -65,7 +65,7 @@ def start(message):
         bot.send_message(message.from_user.id, "Type /ticker")
 
 
-@bot.message_handler(commands=["help"])
+@bot.message_handler(commands=["help"])  # команда help
 def help_command(message):
     keyboard = telebot.types.InlineKeyboardMarkup()
     keyboard.add(
@@ -86,7 +86,7 @@ def help_command(message):
     )
 
 
-@bot.callback_query_handler(func=lambda call: True)
+@bot.callback_query_handler(func=lambda call: True)  # распределение кнопок
 def iq_callback(query):
     data = query.data
     if data.startswith('get-'):
@@ -102,7 +102,7 @@ def iq_callback(query):
             bot.register_next_step_handler(query.message, get_name)
 
 
-@bot.message_handler(content_types=["text"])
+@bot.message_handler(content_types=["text"])  # распознавание текста
 def get_text_messages(message):
     if message.text == "Hi":
         bot.send_message(message.from_user.id, "Hi, you can type /reg to register")
@@ -110,21 +110,21 @@ def get_text_messages(message):
         bot.send_message(message.from_user.id, "I can't understand you. Type /help.")
 
 
-def get_name(message):
+def get_name(message):  # получаем имя
     global name
     name = message.text
     bot.send_message(message.from_user.id, "What is your surname?")
     bot.register_next_step_handler(message, get_surname)
 
 
-def get_surname(message):
+def get_surname(message):  # получаем фамилию
     global surname
     surname = message.text
     bot.send_message(message.from_user.id, "How old are you?")
     bot.register_next_step_handler(message, get_age)
 
 
-def get_age(message):
+def get_age(message):  # получаем возраст
     global age
     age = message.text
     if age.isdigit():
@@ -160,7 +160,7 @@ def send_exchange_result(message, ex_code):
     )
 
 
-def getinfo(ticker):
+def getinfo(ticker):  # получаем инфу по акциям
     url = "https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/v2/get-summary"
     querystring = {"symbol": ticker.text, "region": "US"}
     headers = {
