@@ -7,7 +7,7 @@ from telebot import types
 import pb  # для дашиной функции импортим файл pb
 import json  # импортим для парсинга сайта
 
-bot = telebot.TeleBot("1567492258:AAHSB2NW60E_eOReP47OytVrQW1EHItBvQc")  # АПИ бота, для его подключения
+bot = telebot.TeleBot("")  # АПИ бота, для его подключения
 
 name = ""  # для реги имени
 surname = ""  # для реги фамилии
