@@ -3,13 +3,15 @@ import json
 import requests
 import telebot
 from telebot import types
-import pb               # для Дашиной функции импортим файл pb
+# import app.pb as pb               # для Дашиной функции импортим файл pb
 
-import json  # импортим для парсинга сайта
+
 
 from app.utils import serialize_ex, get_exchange
 from app.config import ctx
 from app.db import User, add_user, create_tables
+# from app.news_parser import get_news_results, get_messages, find_by_token
+import app.news_parser as news_parser
 
 bot = telebot.TeleBot(ctx.tg_bot_token)  # АПИ бота, для его подключения
 
@@ -214,9 +216,57 @@ def iq_callback(query):
         bot.send_message(query.message.chat.id, "Please send a ticker. For example: AAPL",
                          reply_markup=keyboard)
 
-    # TODO:
-    # Proceeding "News_ticker" callback.
-    # Write parser.
+    elif query.data == "News_ticker":
+        # Deleting Inline buttons
+        bot.edit_message_reply_markup(chat_id=query.message.chat.id, message_id=query.message.message_id)
+        # Creating the keyboard
+        keyboard = telebot.types.InlineKeyboardMarkup()
+        keyboard.row(
+            telebot.types.InlineKeyboardButton("Back", callback_data="ticker_back"),
+            telebot.types.InlineKeyboardButton("Menu", callback_data="main_menu")
+        )
+
+        bot.register_next_step_handler(query.message, sendnews)
+
+        bot.send_message(query.message.chat.id, "Please send a ticker at I'll find news for it. For example: AAPL",
+                         reply_markup=keyboard)
+
+    elif query.data.startswith('send_ticker_results_'):
+        # Deleting Inline buttons
+        bot.edit_message_reply_markup(chat_id=query.message.chat.id, message_id=query.message.message_id)
+
+        url = "https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/v2/get-summary"
+        querystring = {"symbol": query.data.strip('send_ticker_results_'), "region": "US"}
+        headers = {
+            'x-rapidapi-key': "7d2a5f774amshbee3475d315e704p1bd9e6jsnc7de2c4c43d6",
+            'x-rapidapi-host': "apidojo-yahoo-finance-v1.p.rapidapi.com"
+        }
+        response = requests.request("GET", url, headers=headers, params=querystring)
+        try:
+            qwe = json.loads(response.text)
+            keyboard = telebot.types.InlineKeyboardMarkup()
+            keyboard.row(
+                telebot.types.InlineKeyboardButton("Back", callback_data="ticker_back"),
+                telebot.types.InlineKeyboardButton("Menu", callback_data="main_menu")
+            )
+
+            bot.send_message(query.message.chat.id,
+                             f" {query.data.strip('send_ticker_results_')}\nCurrent price - {qwe['financialData']['currentPrice']['raw']}\nEnterpriseVAlue - {qwe['defaultKeyStatistics']['enterpriseValue']['raw']}",
+                             reply_markup=keyboard)
+
+        except json.decoder.JSONDecodeError:
+            keyboard = telebot.types.InlineKeyboardMarkup()
+            keyboard.row(
+                telebot.types.InlineKeyboardButton("Back", callback_data="ticker_back"),
+                telebot.types.InlineKeyboardButton("Menu", callback_data="main_menu")
+            )
+
+            bot.send_message(query.message.chat.id, "No such ticker has been found. Please try again.",
+                             reply_markup=keyboard)
+
+            bot.register_next_step_handler(query.message, getinfo)
+            return
+
     else:
         if query.data == "reg_confirmed":
             # Deleting Inline buttons
@@ -240,10 +290,15 @@ def iq_callback(query):
 @bot.message_handler(content_types=["text"])
 def get_text_messages(message):
     if message.text == "Hi":
-        bot.send_message(message.from_user.id, "Hi, you can type /reg to register")
+        kb = types.InlineKeyboardMarkup()
+        kb.add(types.InlineKeyboardButton(text="Register", callback_data="reg"))
+        bot.send_message(message.from_user.id, "Hi, you can press Register to register", reply_markup=kb)
     else:
-        bot.send_message(message.from_user.id, "I can't understand you. Press /menu to get a list of possible "
-                                               "features or /help if you need.")
+        kb = types.InlineKeyboardMarkup()
+        kb.add(types.InlineKeyboardButton(text="Menu", callback_data="main_menu"))
+        kb.add(types.InlineKeyboardButton(text="Help", callback_data="help"))
+        bot.send_message(message.from_user.id, "I can't understand you. Press Menu to get a list of possible "
+                                               "features or Help if you need.", reply_markup=kb)
 
 
 # Register functions query
@@ -289,7 +344,7 @@ def get_ex_callback(query):
 
 def send_exchange_result(message, ex_code):
     bot.send_chat_action(message.chat.id, "typing")
-    ex = pb.get_exchange(ex_code)
+    ex = get_exchange(ex_code)
 
     bot.send_message(
         message.chat.id,
@@ -357,6 +412,22 @@ def getinfo(ticker):
         return
 
 
+def sendnews(ticker):
+    keyboard = telebot.types.InlineKeyboardMarkup()
+    keyboard.row(
+        telebot.types.InlineKeyboardButton("Back", callback_data="ticker_back"),
+        telebot.types.InlineKeyboardButton("Menu", callback_data="main_menu"),
+        telebot.types.InlineKeyboardButton("Ticker", callback_data=f"send_ticker_results_{ticker.text}")
+    )
+    keyboard.add(telebot.types.InlineKeyboardButton("Find another one", callback_data="News_ticker"))
+    for msg in news_parser.find_by_token(ticker.text):
+        bot.send_message(ticker.from_user.id, text=msg, parse_mode="HTML")
+
+    bot.send_message(ticker.from_user.id, "That's the news I got for you. Click 'Ticker' to get ticker info for same"
+                                          " request.",
+                     reply_markup=keyboard)
+
+
 # Serializing functions
 
 def serialize_ex(ex_json, diff=None):
@@ -403,3 +474,5 @@ def serialize_exchange_diff(diff):
 
 
 bot.polling(none_stop=True, interval=0)
+
+
